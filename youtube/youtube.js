@@ -5,26 +5,29 @@ const youtube = new Youtube(config.youtubeAPI);
 const ytdl = require('ytdl-core');
 const Discord = require('discord.js');
 
-var messa;
+var bot;
+
+
+
 
 async function searchVideo(name) {
     let videos = await youtube.searchVideos(name, 1);
     let thumbs = videos[0].thumbnails;
     let thum;
     if (thumbs.maxres) {
-        console.log("max");
+        // console.log("max");
         thum = thumbs.maxres;
     } else if (thumbs.high) {
-        console.log("0");
+        // console.log("0");
         thum = thumbs.high;
     } else if (thumbs.medium) {
-        console.log("1");
+        // console.log("1");
         thum = thumbs.medium;
     } else if (thumbs.default) {
-        console.log("2");
+        // console.log("2");
         thum = thumbs.default;
     } else if (thumbs.standard) {
-        console.log("3");
+        // console.log("3");
         thum = thumbs.standard;
     }
     let song = {
@@ -36,7 +39,6 @@ async function searchVideo(name) {
 }
 
 async function sendNowPlayingEmbed(message, song) {
-    console.log(song.thum);
     const rich = new Discord.RichEmbed()
         .setColor('#553778')
         .setTitle(song.title)
@@ -44,12 +46,7 @@ async function sendNowPlayingEmbed(message, song) {
         .setAuthor("Now Playing")
         .setThumbnail(song.thum)
         .addField("DJ:", message.author, false);
-
-
-
-
     message.channel.send(rich);
-
 }
 
 module.exports = {
@@ -191,10 +188,15 @@ module.exports = {
         serverQueue.songs = [];
         serverQueue.connection.dispatcher.end();
     },
-    skip(message) {
-        const serverQueue = message.client.queue.get(message.guild.id);
-        if (!message.member.voiceChannel) return message.channel.send('You have to be in a voice channel to stop the music!');
-        if (!serverQueue) return message.channel.send('There is no song that I could skip!');
+    skip(message, serverId) {
+        var serverQueue;
+        if (!serverId) {
+            serverQueue = message.client.queue.get(message.guild.id);
+            if (!message.member.voiceChannel) return message.channel.send('You have to be in a voice channel to stop the music!');
+            if (!serverQueue) return message.channel.send('There is no song that I could skip!');
+        } else {
+            serverQueue = bot.queue.get(serverId);
+        }
         serverQueue.connection.dispatcher.end();
     },
     pause(message) {
@@ -230,7 +232,47 @@ module.exports = {
         let level = parseFloat(message.content.split(" ")[1]);
         if (!level) return message.channel.send('Enter a number eg.(0.5)');
         serverQueue.connection.dispatcher.setVolume(level);
+    },
+    setBot(gotBot) {
+        bot = gotBot;
+    },
+    _skip
+}
+
+
+//voice req stuff
+async function _skip(name) {
+    let channel = await getVoiceChannelOfUser(getIdOfUser(name));
+    module.exports.skip(null, channel);
+}
+
+function getIdOfUser(name) {
+    let users = bot.users.array();
+    let user = users.find((val, i, obj) => val.username == name);
+    return user.id;
+}
+
+
+async function getVoiceChannelOfUser(id) {
+    let chs = bot.channels;
+    let bam = chs.array();
+
+
+    for (const element of bam) {
+        if (element.type == 'voice') {
+            let chan = element.members.get(id);
+            if (chan) {
+                return chan.guild.id;
+            }
+        }
     }
+    // for (let i = 0; i < bam.length; i++) {
+    //     const element = bam[i];
+
+    // }
+    // console.log(bam);
+    // let haya = new Map();
+    // haya.get("id")
 }
 
 

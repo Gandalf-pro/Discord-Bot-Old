@@ -20,37 +20,13 @@ bot.login(config.token);
 bot.on('ready', async () => {
     console.log('Connected to the server');
     // console.log(await bot.users.get("140235371740004353"));
-    getVoiceChannelOfUser("140235371740004353");
-    console.log(getIdOfUser("Gandalf-pro"));
+    // getVoiceChannelOfUser("140235371740004353");
+    // console.log(getIdOfUser("Gandalf-pro"));
 });
 
 
 
-function getIdOfUser(name) {
-    let users = bot.users.array();
-    let user = users.find((val, i, obj) => val.username == name);
-    return user.id;
-}
 
-
-async function getVoiceChannelOfUser(id) {
-    let chs = await bot.channels;
-    let bam = chs.array();
-
-    for (const element of bam) {
-        let chan = element.members.get(id);
-        if (chan) {
-            return chan;
-        }
-    }
-    // for (let i = 0; i < bam.length; i++) {
-    //     const element = bam[i];
-
-    // }
-    // console.log(bam);
-    // let haya = new Map();
-    // haya.get("id")
-}
 
 
 
@@ -202,3 +178,4 @@ bot.on('guildMemberAdd', async member => {
 });
 
 htp.setbam(you);
+you.setBot(bot);

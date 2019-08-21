@@ -18,7 +18,15 @@ app.listen(1234, () => {
 
 app.get('/play/:song', (req, res) => {
     let song = req.params.song;
-    you.haya(song);
+    let name = req.query.username;
+    you._skip(name);
+    // you.haya(song);
+    res.send("ok");
+});
+
+app.get('/skip', (req, res) => {
+    let name = req.query.username;
+    you._skip(name);
     res.send("ok");
 });
 
