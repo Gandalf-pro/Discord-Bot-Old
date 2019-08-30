@@ -19,8 +19,9 @@ app.listen(1234, () => {
 app.get('/play/:song', (req, res) => {
     let song = req.params.song;
     let name = req.query.username;
-    you._skip(name);
+    // you._skip(name);
     // you.haya(song);
+    you._play(name, song);
     res.send("ok");
 });
 

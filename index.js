@@ -24,7 +24,9 @@ bot.on('ready', async () => {
     // console.log(getIdOfUser("Gandalf-pro"));
 });
 
-
+//bot queue is set for guild(server) id
+//but bot goes to voice channels
+//meaning there can only be one bot on the server
 
 
 

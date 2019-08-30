@@ -5,12 +5,12 @@ const youtube = new Youtube(config.youtubeAPI);
 const ytdl = require('ytdl-core');
 const Discord = require('discord.js');
 
-var bot;
+var bot; //bot = to message.client
 
 
 
 
-async function searchVideo(name) {
+async function searchVideo(name, username) {
     let videos = await youtube.searchVideos(name, 1);
     let thumbs = videos[0].thumbnails;
     let thum;
@@ -33,20 +33,36 @@ async function searchVideo(name) {
     let song = {
         title: videos[0].title,
         url: videos[0].url,
-        thum: thum.url
+        thum: thum.url,
+        requestedBy: username
     }
     return song;
 }
 
-async function sendNowPlayingEmbed(message, song) {
+async function sendAddedToQueueEmbed(textChannel, song) {
+    textChannel.send(`${song} has been added to the queue!`);
+}
+
+async function sendNowPlayingEmbed(textChannel, song) {
     const rich = new Discord.RichEmbed()
         .setColor('#553778')
         .setTitle(song.title)
         .setURL(song.url)
         .setAuthor("Now Playing")
         .setThumbnail(song.thum)
-        .addField("DJ:", message.author, false);
-    message.channel.send(rich);
+        .addField("DJ:", song.requestedBy, false);
+    textChannel.send(rich);
+}
+
+async function getSongFromUrl(url, username) {
+    const songInfo = await ytdl.getInfo(url);
+    song = {
+        "title": songInfo.player_response.videoDetails.title,
+        "url": url,
+        "thum": songInfo.player_response.videoDetails.thumbnail.thumbnails[0].url,
+        "requestedBy": username
+    }
+    return song;
 }
 
 module.exports = {
@@ -65,7 +81,7 @@ module.exports = {
             filter: "audioonly"
         });
     },
-    async execute(message, gotSong) {
+    async execute(message, gotSong, channel) {
         messa = message;
         const args = message.content.split(' ');
         const queue = message.client.queue;
@@ -73,6 +89,7 @@ module.exports = {
 
         //voice channel checking
         const voiceChannel = message.member.voiceChannel;
+        console.log(voiceChannel);
         if (!voiceChannel) return message.channel.send('You need to be in a voice channel to play music!');
 
         //permission checking
@@ -83,32 +100,32 @@ module.exports = {
 
         let empty = false;
         let song;
-        //adding a url
-        // console.log(args[1]);
-        // console.log(ytdl.validateURL(args[1]));
-        // console.log(message.content.slice(args[0].length + 1).length > 1);
-        // console.log(message.content.slice(args[0].length + 1));
 
-        //if empty           
-        if (args.length <= 1) {
+
+        //if empty meaning just caling to bot to voice channel       
+        if (args.length <= 1 && !serverQueue) {
             console.log("hello");
-            voiceChannel.join();
+            const queueContruct = {
+                textChannel: message.channel,
+                voiceChannel: voiceChannel,
+                connection: null,
+                songs: [],
+                volume: 5,
+                playing: false
+            };
+
+            queue.set(message.guild.id, queueContruct);
+
+
+            queueContruct.connection = await voiceChannel.join();
+
             return;
         } else if (ytdl.validateURL(args[1])) {
-            const songInfo = await ytdl.getInfo(args[1]);
-
-            song = {
-                title: songInfo.player_response.videoDetails.title,
-                url: args[1],
-                thum: songInfo.player_response.videoDetails.thumbnail.thumbnails[0].url
-            }
-        } else if (gotSong) {
-            song = await searchVideo(gotSong).catch(error => {
-                console.log(error);
-            });
+            //if we got a youtube url
+            song = getSongFromUrl(args[1], message.author);
         } else if (message.content.slice(args[0].length + 1).length > 1) {
             //search the video and then put in a object
-            song = await searchVideo((message.content.slice(args[0].length + 1))).catch(error => {
+            song = await searchVideo((message.content.slice(args[0].length + 1)), message.author).catch(error => {
                 console.log(error);
             });
         } else {
@@ -148,23 +165,36 @@ module.exports = {
 
         } else {
             serverQueue.songs.push(song);
-            return message.channel.send(`${song.title} has been added to the queue!`);
+            if (!serverQueue.playing) {
+                this.play(message, song)
+            } else {
+                return sendAddedToQueueEmbed(message.channel, song.title);
+            }
         }
 
     },
-    play(message, song) {
-        const queue = message.client.queue;
-        const guild = message.guild;
-        const serverQueue = queue.get(message.guild.id);
+    play(message, song, chan) {
+        const queue = bot.queue;
+        let guild;
+        //if there is a channel id instead of a message (for speech)
+        if (chan) {
+            guild = chan;
+        } else {
+            guild = message.guild.id;
+        }
+        const serverQueue = queue.get(guild);
+
 
         if (!song) {
             serverQueue.voiceChannel.leave();
-            queue.delete(guild.id);
+            queue.delete(guild);
             return;
         }
 
-        // message.channel.send(`Now Playing:${song.title}    DJ:${message.author}`);
-        sendNowPlayingEmbed(message, song);
+
+        sendNowPlayingEmbed(serverQueue.textChannel, song);
+
+        serverQueue.playing = true;
         const dispatcher = serverQueue.connection.playStream(ytdl(song.url, {
                 filter: "audioonly"
             }), {
@@ -174,13 +204,16 @@ module.exports = {
             .on('end', () => {
                 console.log('Music ended!');
                 serverQueue.songs.shift();
-                this.play(message, serverQueue.songs[0]);
+                if (message) {
+                    this.play(message, serverQueue.songs[0]);
+                } else {
+                    this.play(false, serverQueue.songs[0], chan);
+                }
             })
             .on('error', error => {
                 console.log(error);
             });
         // dispatcher.setVolumeLogarithmic(serverQueue.volume / 5);
-
     },
     stop(message) {
         const serverQueue = message.client.queue.get(message.guild.id);
@@ -188,15 +221,10 @@ module.exports = {
         serverQueue.songs = [];
         serverQueue.connection.dispatcher.end();
     },
-    skip(message, serverId) {
-        var serverQueue;
-        if (!serverId) {
-            serverQueue = message.client.queue.get(message.guild.id);
-            if (!message.member.voiceChannel) return message.channel.send('You have to be in a voice channel to stop the music!');
-            if (!serverQueue) return message.channel.send('There is no song that I could skip!');
-        } else {
-            serverQueue = bot.queue.get(serverId);
-        }
+    skip(message) {
+        var serverQueue = message.client.queue.get(message.guild.id);
+        if (!message.member.voiceChannel) return message.channel.send('You have to be in a voice channel to stop the music!');
+        if (!serverQueue) return message.channel.send('There is no song that I could skip!');
         serverQueue.connection.dispatcher.end();
     },
     pause(message) {
@@ -236,14 +264,74 @@ module.exports = {
     setBot(gotBot) {
         bot = gotBot;
     },
-    _skip
+    _skip,
+    _play
 }
 
 
 //voice req stuff
 async function _skip(name) {
-    let channel = await getVoiceChannelOfUser(getIdOfUser(name));
-    module.exports.skip(null, channel);
+    let channels = await getVoiceChannelOfUser(getIdOfUser(name));
+    let channelId = channels.guild;
+    let serverQueue = bot.queue.get(channelId)
+    serverQueue.connection.dispatcher.end();
+}
+
+async function _play(name, songGot) {
+    let channels = await getVoiceChannelOfUser(getIdOfUser(name));
+    let voiceChannel = channels.voice;
+    let textChannel = channels.text;
+    let channel = channels.guild;
+    let queue = bot.queue;
+    if (channel) {
+        let serverQueue = bot.queue.get(channel);
+        //searching the song from youtube
+        let song = await searchVideo(songGot, name);
+
+        //if bot is already in the server
+        if (serverQueue) {
+
+            //pushing the song to servers queue
+            serverQueue.songs.push(song);
+
+            if (!serverQueue.playing) { //if nothing is playing play the song
+                module.exports.play(false, song, channel);
+            } else { //else only add it to the queue
+                sendAddedToQueueEmbed(serverQueue.textChannel, song.title)
+            }
+
+
+
+        } else { //if bot is not in the server
+            //blueprint for serverQueue
+            const queueContruct = {
+                "textChannel": textChannel,
+                "voiceChannel": voiceChannel,
+                connection: null,
+                songs: [],
+                volume: 5,
+                playing: true
+            };
+            //puting the blueprint to the general(bot's) db
+            queue.set(channel, queueContruct);
+            queueContruct.songs.push(song);
+
+            try {
+                var connection = await voiceChannel.join();
+
+                queueContruct.connection = connection;
+                module.exports.play(false, song, channel);
+            } catch (error) {
+                console.log(error);
+                queue.delete(channel);
+                return queueContruct.textChannel.send(error);
+            }
+
+        }
+
+    } else {
+        console.log("you have to be in a server username:" + name);
+    }
 }
 
 function getIdOfUser(name) {
@@ -252,7 +340,7 @@ function getIdOfUser(name) {
     return user.id;
 }
 
-
+//returns the guild(server) id
 async function getVoiceChannelOfUser(id) {
     let chs = bot.channels;
     let bam = chs.array();
@@ -262,25 +350,15 @@ async function getVoiceChannelOfUser(id) {
         if (element.type == 'voice') {
             let chan = element.members.get(id);
             if (chan) {
-                return chan.guild.id;
+                let voiceId = element;
+                let guildId = chan.guild.id;
+                let textId = bot.channels.get(chan.guild.systemChannelID);
+                return {
+                    "voice": voiceId,
+                    "guild": guildId,
+                    "text": textId
+                };
             }
         }
     }
-    // for (let i = 0; i < bam.length; i++) {
-    //     const element = bam[i];
-
-    // }
-    // console.log(bam);
-    // let haya = new Map();
-    // haya.get("id")
 }
-
-
-
-// youtube.searchVideos("payphone", 1).then(videos => {
-//     console.log(videos);
-
-//     console.log(videos[0].raw.id.videoId);
-//     let url = 'http://www.youtube.com/watch?v=' + videos[0].raw.id.videoId;
-//     // ytdl(url, { filter: "audioonly" }).pipe(fs.createWriteStream('bam.flv'));
-// })
