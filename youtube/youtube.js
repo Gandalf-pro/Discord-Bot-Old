@@ -4,6 +4,7 @@ const config = require('../config.json');
 const youtube = new Youtube(config.youtubeAPI);
 const ytdl = require('ytdl-core');
 const Discord = require('discord.js');
+const lyrics = require('../lyrics/lyrics');
 
 var bot; //bot = to message.client
 
@@ -265,7 +266,11 @@ module.exports = {
         bot = gotBot;
     },
     _skip,
-    _play
+    _play,
+    _pause,
+    _resume,
+    _lyrics,
+    _volume
 }
 
 
@@ -273,8 +278,46 @@ module.exports = {
 async function _skip(name) {
     let channels = await getVoiceChannelOfUser(getIdOfUser(name));
     let channelId = channels.guild;
-    let serverQueue = bot.queue.get(channelId)
+    let serverQueue = bot.queue.get(channelId);
     serverQueue.connection.dispatcher.end();
+}
+
+async function _pause(name) {
+    let channels = await getVoiceChannelOfUser(getIdOfUser(name));
+    let channelId = channels.guild;
+    let serverQueue = bot.queue.get(channelId);
+    serverQueue.connection.dispatcher.pause();
+}
+
+async function _resume(name) {
+    let channels = await getVoiceChannelOfUser(getIdOfUser(name));
+    let channelId = channels.guild;
+    let serverQueue = bot.queue.get(channelId);
+    serverQueue.connection.dispatcher.resume();
+}
+
+async function _lyrics(name, songName) {
+    let channels = await getVoiceChannelOfUser(getIdOfUser(name));
+    let channelId = channels.guild;
+    let serverQueue = bot.queue.get(channelId);
+    var reelSongName;
+    //if a song name is provided
+    if (songName) {
+        reelSongName = songName;
+    } else if (serverQueue.playing) { //if we already got one playing
+        reelSongName = serverQueue.songs[0].title;
+    } else {
+        console.log("cant get the lyrics");
+        return;
+    }
+    await lyrics.sendToTextChannel(serverQueue.textChannel, reelSongName);
+}
+
+async function _volume(name, level) {
+    let channels = await getVoiceChannelOfUser(getIdOfUser(name));
+    let channelId = channels.guild;
+    let serverQueue = bot.queue.get(channelId);
+    serverQueue.connection.dispatcher.setVolume(level);
 }
 
 async function _play(name, songGot) {

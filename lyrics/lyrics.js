@@ -4,7 +4,7 @@ const ip = config.lyricServer;
 const port = "4000";
 console.log(`Using ${ip}:${port} for Lyric server`);
 const apiKey = config.lyricApiKey;
-
+const chLimit = 2000;
 
 module.exports = {
     async getData(songName) {
@@ -28,7 +28,6 @@ module.exports = {
         }
     },
     async sendLyrics(message, song) {
-        let chLimit = 2000;
         let lyrics;
         if (song) {
             lyrics = await this.getData(song);
@@ -41,6 +40,18 @@ module.exports = {
                 message.channel.send(lyrics.slice(i * chLimit, ((i + 1) * chLimit)));
             } else {
                 message.channel.send(lyrics.slice(i * chLimit));
+            }
+        }
+    },
+    async sendToTextChannel(textChannel, song) {
+        let lyrics = await this.getData(song);
+        
+        let count = Math.ceil(lyrics.length / chLimit);
+        for (let i = 0; i < count; i++) {
+            if (lyrics.length > ((i + 1) * chLimit)) {
+                textChannel.send(lyrics.slice(i * chLimit, ((i + 1) * chLimit)));
+            } else {
+                textChannel.send(lyrics.slice(i * chLimit));
             }
         }
     }
