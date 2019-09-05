@@ -1,19 +1,20 @@
 console.clear();
+const path = require("path")
 const Discord = require('discord.js');
-const Client = require('./client/Client');
-const config = require("./config.json");
+const Client = require(path.join(__dirname, 'client/Client'));
+const config = require(path.join(__dirname, "config.json"));
 const fs = require('fs');
 const bot = new Client(config.token);
 
 
 
-const you = require('./youtube/youtube');
-const rainbow = require('./R6/rainbow');
-const lyrics = require('./lyrics/lyrics');
-var commands = JSON.parse(fs.readFileSync('./commands.json'));
-var responses = JSON.parse(fs.readFileSync('./responses.json'));
+const you = require(path.join(__dirname, 'youtube/youtube'));
+const rainbow = require(path.join(__dirname, 'R6/rainbow'));
+const lyrics = require(path.join(__dirname, 'lyrics/lyrics'));
+var commands = JSON.parse(fs.readFileSync(path.join(__dirname, 'commands.json')));
+var responses = JSON.parse(fs.readFileSync(path.join(__dirname, 'responses.json')));
 
-var htp = require('./httpExtension');
+var htp = require(path.join(__dirname, 'httpExtension'));
 
 
 bot.login(config.token);
@@ -44,8 +45,8 @@ function randomRes(param) {
 
 
 function reload() {
-    commands = JSON.parse(fs.readFileSync('./commands.json'));
-    responses = JSON.parse(fs.readFileSync('./responses.json'));
+    commands = JSON.parse(fs.readFileSync(path.join(__dirname, 'commands.json')));
+    responses = JSON.parse(fs.readFileSync(path.join(__dirname, 'responses.json')));
 }
 
 
@@ -61,7 +62,7 @@ bot.on('message', async msg => {
             msg.reply('yeah ni');
         }
 
-        
+
 
         //play command
         commands.play.forEach(element => {
@@ -127,7 +128,7 @@ bot.on('message', async msg => {
                 // let res = data.username + " is level " + data.level + " with " + data.kd + " kd and " + data.mmr + " mmr";
                 // msg.channel.send(res);
                 //it has a name
-                
+
                 if (args.length > 1 && args[1].toLowerCase() !== "all") {
                     rainbow.sendEmbed(msg, args[1]);
                 } else {
@@ -135,8 +136,8 @@ bot.on('message', async msg => {
                 }
             }
         });
-        
-        
+
+
 
         //lyrics
         commands.lyrics.forEach(async element => {

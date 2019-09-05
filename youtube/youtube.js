@@ -1,10 +1,11 @@
 const fs = require('fs');
+const path = require("path");
 const Youtube = require('simple-youtube-api');
-const config = require('../config.json');
+const config = require(path.join(__dirname, '../config.json'));
 const youtube = new Youtube(config.youtubeAPI);
 const ytdl = require('ytdl-core');
 const Discord = require('discord.js');
-const lyrics = require('../lyrics/lyrics');
+const lyrics = require(path.join(__dirname, '../lyrics/lyrics'));
 
 var bot; //bot = to message.client
 

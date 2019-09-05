@@ -1,5 +1,6 @@
 const fetch = require("node-fetch");
-const config = require("../config.json");
+const path = require('path');
+const config = require(path.join(__dirname, "../config.json"));
 const ip = config.lyricServer;
 const port = "8416";
 console.log(`Using ${ip}:${port} for Lyric server`);
@@ -45,7 +46,7 @@ module.exports = {
     },
     async sendToTextChannel(textChannel, song) {
         let lyrics = await this.getData(song);
-        
+
         let count = Math.ceil(lyrics.length / chLimit);
         for (let i = 0; i < count; i++) {
             if (lyrics.length > ((i + 1) * chLimit)) {
