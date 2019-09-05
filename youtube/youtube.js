@@ -40,8 +40,34 @@ async function searchVideo(name, username) {
     return song;
 }
 
-async function sendAddedToQueueEmbed(textChannel, song) {
-    textChannel.send(`${song} has been added to the queue!`);
+async function sendSkipEmbed(textChannel, song) {
+
+}
+
+async function sendPauseEmbed(serverQueue) {
+    let textChannel = serverQueue.textChannel;
+    const rich = new Discord.RichEmbed()
+    
+}
+
+async function sendResumeEmbed(textChannel, song) {
+
+}
+
+async function sendVolumeEmbed(textChannel, song) {
+
+}
+
+async function sendAddedToQueueEmbed(serverQueue) {
+    let textChannel = serverQueue.textChannel;
+    let song = serverQueue.songs[serverQueue.songs.length];
+    textChannel.send(`${song.title} has been added to the queue!`);
+    let rich = new Discord.RichEmbed()
+        .setColor('#553778')
+        .setTitle(song.title)
+        .setURL(song.url)
+        .setAuthor('Has Been Added To The Queue')
+
 }
 
 async function sendNowPlayingEmbed(textChannel, song) {
@@ -53,6 +79,7 @@ async function sendNowPlayingEmbed(textChannel, song) {
         .setThumbnail(song.thum)
         .addField("DJ:", song.requestedBy, false);
     textChannel.send(rich);
+
 }
 
 async function getSongFromUrl(url, username) {
@@ -90,7 +117,6 @@ module.exports = {
 
         //voice channel checking
         const voiceChannel = message.member.voiceChannel;
-        console.log(voiceChannel);
         if (!voiceChannel) return message.channel.send('You need to be in a voice channel to play music!');
 
         //permission checking
@@ -123,7 +149,7 @@ module.exports = {
             return;
         } else if (ytdl.validateURL(args[1])) {
             //if we got a youtube url
-            song = getSongFromUrl(args[1], message.author);
+            song = await getSongFromUrl(args[1], message.author);
         } else if (message.content.slice(args[0].length + 1).length > 1) {
             //search the video and then put in a object
             song = await searchVideo((message.content.slice(args[0].length + 1)), message.author).catch(error => {
@@ -169,7 +195,7 @@ module.exports = {
             if (!serverQueue.playing) {
                 this.play(message, song)
             } else {
-                return sendAddedToQueueEmbed(message.channel, song.title);
+                return sendAddedToQueueEmbed(serverQueue);
             }
         }
 
@@ -286,6 +312,7 @@ async function _pause(name) {
     let channels = await getVoiceChannelOfUser(getIdOfUser(name));
     let channelId = channels.guild;
     let serverQueue = bot.queue.get(channelId);
+    sendPauseEmbed(serverQueue);
     serverQueue.connection.dispatcher.pause();
 }
 
@@ -320,8 +347,8 @@ async function _volume(name, level) {
     serverQueue.connection.dispatcher.setVolume(level);
 }
 
-async function _play(name, songGot) {
-    let channels = await getVoiceChannelOfUser(getIdOfUser(name));
+async function _play(name, songGot, textNameRec) {
+    let channels = await getVoiceChannelOfUser(getIdOfUser(name), textNameRec);
     let voiceChannel = channels.voice;
     let textChannel = channels.text;
     let channel = channels.guild;
@@ -340,7 +367,7 @@ async function _play(name, songGot) {
             if (!serverQueue.playing) { //if nothing is playing play the song
                 module.exports.play(false, song, channel);
             } else { //else only add it to the queue
-                sendAddedToQueueEmbed(serverQueue.textChannel, song.title)
+                sendAddedToQueueEmbed(serverQueue)
             }
 
 
@@ -384,7 +411,7 @@ function getIdOfUser(name) {
 }
 
 //returns the guild(server) id
-async function getVoiceChannelOfUser(id) {
+async function getVoiceChannelOfUser(id, textNameRec) {
     let chs = bot.channels;
     let bam = chs.array();
 
@@ -395,11 +422,25 @@ async function getVoiceChannelOfUser(id) {
             if (chan) {
                 let voiceId = element;
                 let guildId = chan.guild.id;
-                let textId = bot.channels.get(chan.guild.systemChannelID);
+                let textId;
+                // let textId = bot.channels.get(chan.guild.systemChannelID);
+                if (textNameRec) {
+                    for (const ha of chan.guild.channels.array()) {
+                        if (ha.type == 'text' && ha.name.toLowerCase() == textNameRec.toLowerCase()) {
+                            textId = ha;
+                            break;
+                        }
+                    }
+                    return {
+                        "voice": voiceId,
+                        "guild": guildId,
+                        "text": textId
+                    };
+                }
+                // let textId = chan.user.lastMessage.channel;
                 return {
                     "voice": voiceId,
-                    "guild": guildId,
-                    "text": textId
+                    "guild": guildId
                 };
             }
         }

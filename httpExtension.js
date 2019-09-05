@@ -20,7 +20,8 @@ app.listen(1234, () => {
 app.get('/play*', (req, res) => {
     let song = req.query.args;
     let name = req.query.username;
-    you._play(name, song);
+    let textChannel = req.query.textChannel;
+    you._play(name, song, textChannel);
     res.send("ok");
 });
 

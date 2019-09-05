@@ -1,3 +1,4 @@
+console.clear();
 const Discord = require('discord.js');
 const Client = require('./client/Client');
 const config = require("./config.json");
@@ -132,6 +133,7 @@ bot.on('message', async msg => {
                 }
             }
         });
+        
 
         //lyrics
         commands.lyrics.forEach(async element => {

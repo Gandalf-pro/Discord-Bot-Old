@@ -1,7 +1,7 @@
 const fetch = require("node-fetch");
 const config = require("../config.json");
 const ip = config.lyricServer;
-const port = "4000";
+const port = "8416";
 console.log(`Using ${ip}:${port} for Lyric server`);
 const apiKey = config.lyricApiKey;
 const chLimit = 2000;
