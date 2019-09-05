@@ -1,5 +1,6 @@
 const fs = require("fs");
-var userFile = fs.readFileSync('R6/usernames.json');
+const path = require('path');
+var userFile = fs.readFileSync(path.join(__dirname, 'R6/usernames.json'));
 var usernames = JSON.parse(userFile);
 const fetch = require("node-fetch");
 const Discord = require("discord.js");
@@ -45,7 +46,7 @@ module.exports = {
         }
     },
     reload() {
-        userFile = fs.readFileSync('R6/usernames.json');
+        userFile = fs.readFileSync(path.join(__dirname, 'R6/usernames.json'));
         usernames = JSON.parse(userFile);
     }
 }
