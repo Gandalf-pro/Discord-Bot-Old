@@ -40,6 +40,11 @@ async function searchVideo(name, username) {
     return song;
 }
 
+function delAfterMin(mes, min) {
+    min = min * 60 * 1000;
+    mes.delete(min);
+}
+
 async function sendSkipEmbed(textChannel, song) {
 
 }
@@ -47,7 +52,7 @@ async function sendSkipEmbed(textChannel, song) {
 async function sendPauseEmbed(serverQueue) {
     let textChannel = serverQueue.textChannel;
     const rich = new Discord.RichEmbed()
-    
+
 }
 
 async function sendResumeEmbed(textChannel, song) {
@@ -78,9 +83,13 @@ async function sendNowPlayingEmbed(textChannel, song) {
         .setAuthor("Now Playing")
         .setThumbnail(song.thum)
         .addField("DJ:", song.requestedBy, false);
-    textChannel.send(rich);
+    textChannel.send(rich).then(mes => {
+        delAfterMin(mes, 3);
+    });
 
 }
+
+
 
 async function getSongFromUrl(url, username) {
     const songInfo = await ytdl.getInfo(url);

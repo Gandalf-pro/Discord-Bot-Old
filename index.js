@@ -126,6 +126,7 @@ bot.on('message', async msg => {
                 // let res = data.username + " is level " + data.level + " with " + data.kd + " kd and " + data.mmr + " mmr";
                 // msg.channel.send(res);
                 //it has a name
+                
                 if (args.length > 1 && args[1].toLowerCase() !== "all") {
                     rainbow.sendEmbed(msg, args[1]);
                 } else {
@@ -133,6 +134,7 @@ bot.on('message', async msg => {
                 }
             }
         });
+        
         
 
         //lyrics
