@@ -52,6 +52,7 @@ function reload() {
 bot.on('message', async msg => {
     //if its starts with the prefix
     if (msg.content.startsWith(config.prefix)) {
+        msg.delete(3 * 60 * 1000);
         let mesage = msg.content.slice(config.prefix.length);
         let args = mesage.split(" ");
 
