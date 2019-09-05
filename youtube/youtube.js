@@ -42,6 +42,7 @@ async function searchVideo(name, username) {
 
 function delAfterMin(mes, min) {
     min = min * 60 * 1000;
+    min = Math.round(min);
     mes.delete(min);
 }
 
@@ -65,13 +66,18 @@ async function sendVolumeEmbed(textChannel, song) {
 
 async function sendAddedToQueueEmbed(serverQueue) {
     let textChannel = serverQueue.textChannel;
-    let song = serverQueue.songs[serverQueue.songs.length];
-    textChannel.send(`${song.title} has been added to the queue!`);
+    let song = serverQueue.songs[serverQueue.songs.length - 1];
+    // textChannel.send(`${song.title} has been added to the queue!`);
     let rich = new Discord.RichEmbed()
         .setColor('#553778')
         .setTitle(song.title)
         .setURL(song.url)
         .setAuthor('Has Been Added To The Queue')
+        .setThumbnail(song.thum)
+        .addField("DJ:", song.requestedBy, false);
+    textChannel.send(rich).then(mes => {
+        delAfterMin(mes, 0.5);
+    });
 
 }
 
