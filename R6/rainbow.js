@@ -1,10 +1,8 @@
 const fs = require("fs");
-var userFile = fs.readFileSync('./usernames.json');
+var userFile = fs.readFileSync('R6/usernames.json');
 var usernames = JSON.parse(userFile);
 const fetch = require("node-fetch");
 const Discord = require("discord.js");
-
-
 
 function getImgUrl(id) {
     return ("https://ubisoft-avatars.akamaized.net/" + id + "/default_256_256.png");
@@ -47,7 +45,7 @@ module.exports = {
         }
     },
     reload() {
-        userFile = fs.readFileSync('./usernames.json');
+        userFile = fs.readFileSync('R6/usernames.json');
         usernames = JSON.parse(userFile);
     }
 }
